@@ -55,6 +55,8 @@ You'll need:
 
 Once you've got those 3 last values, paste them at the top of the **bot-template.py** file.
 
+At this point you can also set up any role/channels restriction for the bot that you'd like, by editing the values right underneath where those IDs and tokens were placed. Use lowercase letters for both roles and channels you'd like to restrict bot usage to.
+
 You're free to modify the code to fit your needs. Crucially, you probably need to modify the **format_row(...)** near the beginning of the bot script.
 
 ## Running the bot:
