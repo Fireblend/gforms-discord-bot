@@ -1,7 +1,7 @@
 # Using the bot:
 
 - Use the **!start** command to make the bot start reading the sheet and post updates every 10 minutes.
-- Use the **!start <num>** command where <num> is the row number you want it to start reading from.
+- Alternatively, use the **!start N** command where **N** is the row number you want it to start reading from.
 - The bot has a cache that remembers the last row it reported on, so you don't have to specify a number after the first run if you just want it to continue where it left off.
 - Use the **!stop** command to make the bot stop posting updates.
 
