@@ -47,7 +47,7 @@ CHANNELS = ['general']
 # You can enable a command that lets anyone request a random
 # response with a different formatting style. Set to True if you'd
 # like to enable this command.
-RANDOM_ENABLED = True
+RANDOM_ENABLED = False
 RANDOM_ROLES = []
 RANDOM_CHANNELS = []
 
