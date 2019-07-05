@@ -1,3 +1,7 @@
+# gforms-discord-bot
+
+This is a simple Discord bot intended to monitor and report on incoming responses from Google Forms through its Google Sheets integration. It regularly checks for new rows in the responses spreadsheet, and posts them on Discord. It's well commented and minimalistic, so feel free to adapt it to your own needs!
+
 # Using the bot:
 
 - Use the **!start** command to make the bot start reading the sheet and post updates every 10 minutes.
