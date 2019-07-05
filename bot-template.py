@@ -28,21 +28,26 @@ SPREADSHEET_ID = '<INSERT SPREADSHEET ID HERE>'
 RANGE = '<INSERT SPREADSHEET NAME HERE>'
 # Discord Token
 DISCORD_TOKEN = '<INSERT DISCORD BOT TOKEN HERE>'
-# Update time (10 minutes default)
-WAIT_TIME = 60*10
+# Update time (5 minutes default)
+WAIT_TIME = 60*5
+# User roles that can interact with this bot:
+# Use all-lowercase regardless of role capitalization
+ROLES = ['admin', 'mods']
+# Channels where interaction with this bot are allowed:
+# Use all-lowercase regardless of role capitalization
+CHANNELS = ['general']
 
 #################################
 #       FORMATTING FUNCTION
 #################################
 
 # Modify this function to determine how each row will be formatted when posted to Discord.
-# The decode calls are there to sanitize the input.
 def format_row(row):
-    username = row[1].decode("utf8","ignore")
-    stage_name = row[2].decode("utf8","ignore")
-    code = row[3].decode("utf8","ignore")
-    style = row[4].decode("utf8","ignore")
-    tags = row[5].decode("utf8","ignore")
+    username = row[1]
+    stage_name = row[2]
+    code = row[3]
+    style = row[4]
+    tags = row[5]
     return ('%s: \"**%s**\" [**%s**] (%s; %s)' % (username, stage_name, code, style, tags))
 
 ################################
@@ -90,7 +95,12 @@ def makePost(last_row=0):
         # Append a line to the result post for every row in the sheet:
         for row in values[last_row:]:
             last_row = last_row+1
-            post = post+format_row(row)+'\n'
+            to_add = format_row(row)+'\n'
+            # Discord has a 2000 characters limit. If we're about to surpass that,
+            # stop and leave the rest for the next update.
+            if(len(post)+len(to_add) > 2000):
+                break
+            post = post+to_add
 
         # Save the last row number
         with open('last_row.pickle', 'wb') as last_row_p:
@@ -109,6 +119,20 @@ client = discord.Client()
 stop = True
 task = None
 
+async def is_channel_allowed(message):
+    channel = message.channel
+    if channel.name.lower() not in CHANNELS:
+        await message.channel.send("You can't do that here! Are you in the right channel?")
+        return False
+    return True
+
+async def is_user_allowed(message):
+    user = message.author
+    if next((x for x in user.roles if x.name.lower() in ROLES), None) is None:
+        await message.channel.send("You can't do that! Do you have the right role?")
+        return False
+    return True
+
 @client.event
 async def on_message(message):
     global task
@@ -120,10 +144,20 @@ async def on_message(message):
 
     # Loop interrupt logic
     if message.content.startswith('!stop'):
+
+        # Check channel:
+        if not await is_channel_allowed(message):
+            return
+
+        # Check user role:
+        if not await is_user_allowed(message):
+            return
+
         # If already stopped, show a message
         if(stop):
             await message.channel.send("Already stopped!")
             return
+
         # Stop the update loop
         stop = True
         task.cancel()
@@ -131,6 +165,15 @@ async def on_message(message):
 
     # Loop start logic
     elif message.content.startswith('!start'):
+
+        # Check channel:
+        if not await is_channel_allowed(message):
+            return
+
+        # Check user role:
+        if not await is_user_allowed(message):
+            return
+
         # If already started, show a message
         if(not stop):
             await message.channel.send("Already started!")
