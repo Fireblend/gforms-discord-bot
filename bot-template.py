@@ -17,6 +17,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import discord
 import asyncio
+import random
 
 ################################
 #            SETUP
@@ -28,14 +29,27 @@ SPREADSHEET_ID = '<INSERT SPREADSHEET ID HERE>'
 RANGE = '<INSERT SPREADSHEET NAME HERE>'
 # Discord Token
 DISCORD_TOKEN = '<INSERT DISCORD BOT TOKEN HERE>'
+# The first response row on the sheet
+STARTING_ROW = 4
 # Update time (5 minutes default)
 WAIT_TIME = 60*5
 # User roles that can interact with this bot:
 # Use all-lowercase regardless of role capitalization
+# Leave empty if any
 ROLES = ['admin', 'mods']
 # Channels where interaction with this bot are allowed:
 # Use all-lowercase regardless of role capitalization
+# Leave empty if any
 CHANNELS = ['general']
+
+#########################################################
+
+# You can enable a command that lets anyone request a random
+# response with a different formatting style. Set to True if you'd
+# like to enable this command.
+RANDOM_ENABLED = True
+RANDOM_ROLES = []
+RANDOM_CHANNELS = []
 
 #################################
 #       FORMATTING FUNCTION
@@ -50,6 +64,16 @@ def format_row(row):
     tags = row[5]
     return ('%s: \"**%s**\" [**%s**] (%s; %s)' % (username, stage_name, code, style, tags))
 
+# Modify this function to determine how an individual row will be formatted when using the random command.
+# Only used if RANDOM_ENABLED is set to True above.
+def format_random(row):
+    username = row[1]
+    stage_name = row[2]
+    code = row[3]
+    style = row[4]
+    tags = row[5]
+    return ('**%s** by **%s**\n**Code**: %s\n**Style**: %s\n**Tags**: %s' % (stage_name, username, code, style, tags))
+
 ################################
 #      SHEETS API PORTION
 ################################
@@ -58,7 +82,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # This function contacts the sheets API, retrieves values from the specified sheet,
 # and prepares the message to be posted by the bot.
-def makePost(last_row=0):
+def makePost(last_row=0, pick_random=False):
     # Google Sheets Authentication flow
     creds = None
     if os.path.exists('token.pickle'):
@@ -87,20 +111,25 @@ def makePost(last_row=0):
                                 range=RANGE).execute()
     values = result.get('values', [])
 
-    # Start with an empty string
+    # If we're picking a random value, just format a random row:
+    if pick_random:
+        random_row = random.sample(range(STARTING_ROW, len(values)), 1)
+        return format_random(values[random_row[0]])
+
+    # If it's an update, start with an empty string:
     post = ""
     if not values:
         return post
     else:
         # Append a line to the result post for every row in the sheet:
         for row in values[last_row:]:
-            last_row = last_row+1
             to_add = format_row(row)+'\n'
             # Discord has a 2000 characters limit. If we're about to surpass that,
             # stop and leave the rest for the next update.
             if(len(post)+len(to_add) > 2000):
                 break
             post = post+to_add
+            last_row = last_row+1
 
         # Save the last row number
         with open('last_row.pickle', 'wb') as last_row_p:
@@ -119,16 +148,20 @@ client = discord.Client()
 stop = True
 task = None
 
-async def is_channel_allowed(message):
+async def is_channel_allowed(message, channels=CHANNELS):
+    if(len(channels) == 0):
+        return True
     channel = message.channel
-    if channel.name.lower() not in CHANNELS:
+    if channel.name.lower() not in channels:
         await message.channel.send("You can't do that here! Are you in the right channel?")
         return False
     return True
 
-async def is_user_allowed(message):
+async def is_user_allowed(message, roles=ROLES):
+    if(len(roles) == 0):
+        return True
     user = message.author
-    if next((x for x in user.roles if x.name.lower() in ROLES), None) is None:
+    if next((x for x in user.roles if x.name.lower() in roles), None) is None:
         await message.channel.send("You can't do that! Do you have the right role?")
         return False
     return True
@@ -141,6 +174,28 @@ async def on_message(message):
     # Prevent the vote replying to itself (unlikely, but still a good precation)
     if message.author == client.user:
         return
+
+    # Picks and posts a random response. Only used if RANDOM_ENABLED is set to True.
+    if message.content.startswith('!random'):
+        if not RANDOM_ENABLED:
+            return
+
+        # Check channel:
+        if not await is_channel_allowed(message, channels=RANDOM_CHANNELS):
+            return
+
+        # Check user role:
+        if not await is_user_allowed(message, roles=RANDOM_ROLES):
+            return
+
+        # Retrieve last row number from cache:
+        startFrom = STARTING_ROW
+        if os.path.exists('last_row.pickle'):
+            with open('last_row.pickle', 'rb') as last_row_p:
+                startFrom = pickle.load(last_row_p)
+
+        # Post a random response
+        await message.channel.send("Random level for **%s**:\n\n%s" % (message.author.display_name, makePost(last_row=startFrom, pick_random=True)))
 
     # Loop interrupt logic
     if message.content.startswith('!stop'):
@@ -182,7 +237,7 @@ async def on_message(message):
         stop = False
 
         # Determine the row to start from
-        startFrom = 0
+        startFrom = STARTING_ROW
 
         # If hard-coded in the start command, use that.
         if(len(message.content.strip().split(" ")) > 1):

@@ -8,8 +8,9 @@ This is a simple Discord bot intended to monitor and report on incoming response
 - Alternatively, use the **!start N** command where **N** is the row number you want it to start reading from.
 - The bot has a cache that remembers the last row it reported on, so you don't have to specify a number after the first run if you just want it to continue where it left off.
 - Use the **!stop** command to make the bot stop posting updates.
+- *OPTIONAL*: Use the **!random** command to enable users to get a response at random!
 
-<img src="https://cdn.discordapp.com/attachments/594590954988503042/596747297904132106/unknown.png"/>
+<img src="https://i.imgur.com/CfbnBt9.png"/>
 
 # Deploying this bot
 
@@ -55,9 +56,9 @@ You'll need:
 
 Once you've got those 3 last values, paste them at the top of the **bot-template.py** file.
 
-At this point you can also set up any role/channels restriction for the bot that you'd like, by editing the values right underneath where those IDs and tokens were placed. Use lowercase letters for both roles and channels you'd like to restrict bot usage to.
+At this point you can also set up any role/channels restriction for the bot that you'd like or enable random functionality, by editing the values right underneath where those IDs and tokens were placed. Use lowercase letters for both roles and channels you'd like to restrict bot usage to.
 
-You're free to modify the code to fit your needs. Crucially, you probably need to modify the **format_row(...)** near the beginning of the bot script.
+You're free to modify the code to fit your needs. Crucially, you probably need to modify the **format_row(...)** and **format_random(...)** near the beginning of the bot script.
 
 ## Running the bot:
 
