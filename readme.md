@@ -2,17 +2,16 @@
 
 This is a simple Discord bot intended to monitor and report on incoming responses from Google Forms through its Google Sheets integration. It regularly checks for new rows in the responses spreadsheet, and posts them on Discord. It's well commented and minimalistic, so feel free to adapt it to your own needs!
 
-# Using the bot:
+# Usage:
 
-- Use the **!start** command to make the bot start reading the sheet and post updates every 10 minutes.
+- Use the **!start** command to make the bot start reading the sheet and post regular updates.
 - Alternatively, use the **!start N** command where **N** is the row number you want it to start reading from.
-- The bot has a cache that remembers the last row it reported on, so you don't have to specify a number after the first run if you just want it to continue where it left off.
-- Use the **!stop** command to make the bot stop posting updates.
-- *OPTIONAL*: Use the **!random** command to enable users to get a response at random!
+- Use the **!stop** command to make the bot stop posting updates. The bot has a cache that remembers the last row it posted, so you don't have to specify a number after the first run if you just want it to continue where it left off.
+- *OPTIONAL*: Use the **!random** command to enable users to get a random response.
 
 <img src="https://i.imgur.com/CfbnBt9.png"/>
 
-# Deploying this bot
+# Deploying this bot:
 
 **Requirements**: Make sure to have both Python3 and pip3 installed on your computer/wherever you're running this bot from, as well as git.
 I recommend using a Linux VM with Ubuntu if using Windows. If you're using Ubuntu and starting from scratch, execute:
@@ -68,7 +67,7 @@ To run the bot, just execute the script from the command line:
 $ python3 app.py
 ~~~
 
-## Invite to a discord server and use:
+## Invite to a Discord server and use:
 
 Go to the application dashboard on Discord, and copy the application's **Client ID**, then insert it into this URL:
 https://discordapp.com/oauth2/authorize?client_id=INSERT_CLIENT_ID_HERE&scope=bot
