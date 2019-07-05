@@ -1,7 +1,11 @@
+# gforms-discord-bot
+
+This is a simple Discord bot intended to monitor and report on incoming responses from Google Forms through its Google Sheets integration. It regularly checks for new rows in the responses spreadsheet, and posts them on Discord. It's well commented and minimalistic, so feel free to adapt it to your own needs!
+
 # Using the bot:
 
 - Use the **!start** command to make the bot start reading the sheet and post updates every 10 minutes.
-- Use the **!start <num>** command where <num> is the row number you want it to start reading from.
+- Alternatively, use the **!start N** command where **N** is the row number you want it to start reading from.
 - The bot has a cache that remembers the last row it reported on, so you don't have to specify a number after the first run if you just want it to continue where it left off.
 - Use the **!stop** command to make the bot stop posting updates.
 
@@ -45,13 +49,13 @@ $ pip3 install -r requirements.txt
 
 You'll need:
 
-- A Google **credentials.json** file you can download it from here: https://developers.google.com/sheets/api/quickstart/python and place it in the same directory as the **bot-template.py** file.
+- A Google **credentials.json** file you can download from: https://developers.google.com/sheets/api/quickstart/python. Place it in the same directory as the **bot-template.py** file.
 - A **Google Sheets ID** and the **name of the sheet** you want to pull data from. The ID is found in the sheet's URL.
 - A **Discord bot token**. You can get one by creating an application here: https://discordapp.com/developers/applications/ and then adding a bot to it.
 
 Once you've got those 3 last values, paste them at the top of the **bot-template.py** file.
 
-You're free to modify the code to fit your needs. Crucially, you probably need to modify the format_row function at the top of the file.
+You're free to modify the code to fit your needs. Crucially, you probably need to modify the **format_row(...)** near the beginning of the bot script.
 
 ## Running the bot:
 
