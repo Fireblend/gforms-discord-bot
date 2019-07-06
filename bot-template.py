@@ -1,4 +1,4 @@
-#####################################################
+####################################################
 #
 #   GForms Bot: An easily adaptable Discord bot
 #   that interacts with the Google Sheets API,
@@ -96,6 +96,7 @@ def makePost(last_row=0, pick_random=False):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
+            # creds = flow.run_console() #Alternative authorization flow for console-based systems
             creds = flow.run_local_server()
         # Save the credentials for the next run
         with open('token.pickle', 'wb') as token:
@@ -117,18 +118,13 @@ def makePost(last_row=0, pick_random=False):
         return format_random(values[random_row[0]])
 
     # If it's an update, start with an empty string:
-    post = ""
+    post = []
     if not values:
         return post
     else:
         # Append a line to the result post for every row in the sheet:
         for row in values[last_row:]:
-            to_add = format_row(row)+'\n'
-            # Discord has a 2000 characters limit. If we're about to surpass that,
-            # stop and leave the rest for the next update.
-            if(len(post)+len(to_add) > 2000):
-                break
-            post = post+to_add
+            post.append(format_row(row))
             last_row = last_row+1
 
         # Save the last row number
@@ -251,7 +247,8 @@ async def on_message(message):
                     startFrom = pickle.load(last_row_p)
 
         # Startup message
-        await message.channel.send("Beep boop! Starting from row %s!\nUpdates every 10 minutes!\nStop me with **!stop**\n---" % startFrom)
+        mins = int(WAIT_TIME/60)
+        await message.channel.send("Beep boop! Starting from row %s!\nUpdates every %s minutes!\nStop me with **!stop**\n---" % (startFrom, mins))
         await asyncio.sleep(3)
         print("Started")
         while not stop:
@@ -261,11 +258,12 @@ async def on_message(message):
                     startFrom = pickle.load(last_row_p)
 
             # Build the message using the spreadsheets API
-            msg = makePost(startFrom)
+            posts = makePost(startFrom)
 
             # If non-empty, post the message
-            if(msg != None and msg != ""):
-                await message.channel.send(msg)
+            if(posts != None and len(posts) > 0):
+                for msg in posts:
+                    await message.channel.send(msg)
 
             # Sleep until it's time for the next update
             coro = asyncio.sleep(WAIT_TIME)
@@ -279,9 +277,8 @@ async def on_message(message):
 
 @client.event
 async def on_ready():
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
+    print('Logged in as %s' % client.user.name)
+    print('Invite to your server: https://discordapp.com/oauth2/authorize?client_id=%s&scope=bot' % client.user.id)
     print('------')
 
 # Run the client
