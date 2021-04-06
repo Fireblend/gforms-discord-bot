@@ -24,23 +24,23 @@ import random
 ################################
 
 # Paste spreadsheet ID here
-SPREADSHEET_ID = '<INSERT SPREADSHEET ID HERE>'
+SPREADSHEET_ID = '<SHEET ID>'
 # Paste range here (can be sheet name)
-RANGE = '<INSERT SPREADSHEET NAME HERE>'
+RANGE = 'RANGE IN FORMAT A:D or sheet name'
 # Discord Token
-DISCORD_TOKEN = '<INSERT DISCORD BOT TOKEN HERE>'
+DISCORD_TOKEN = 'TOKEN'
 # The first response row on the sheet
-STARTING_ROW = 4
+STARTING_ROW = 'starting row number'
 # Update time (5 minutes default)
-WAIT_TIME = 60*5
+WAIT_TIME = 60*1
 # User roles that can interact with this bot:
 # Use all-lowercase regardless of role capitalization
 # Leave empty if any
-ROLES = ['admin', 'mods']
+ROLES = ['admin', 'mods', 'zucced']
 # Channels where interaction with this bot are allowed:
 # Use all-lowercase regardless of role capitalization
 # Leave empty if any
-CHANNELS = ['general']
+CHANNELS = ['anomologita']
 
 #########################################################
 
@@ -56,13 +56,20 @@ RANDOM_CHANNELS = []
 #################################
 
 # Modify this function to determine how each row will be formatted when posted to Discord.
-def format_row(row):
-    username = row[1]
-    stage_name = row[2]
-    code = row[3]
-    style = row[4]
-    tags = row[5]
-    return ('%s: \"**%s**\" [**%s**] (%s; %s)' % (username, stage_name, code, style, tags))
+def format_row(row,hashtag):
+    date = row[0]
+    text = row[1]
+    if len(row)==3:
+        if len(row[1])+len(row[2])>2000:
+            return ('>>> ```diff\n- Η καταχώρηση έχει παραπάνω χαρακτήρες από το μέγιστο όριο του Discord και θα παραλειφθεί\n```')
+        dept = row[2]
+        return ('>>> __*Ανομολόγητο#%s*__\n*%s*\n__#%s__\nΣτείλε το δικό σου εσώψυχο! <https://forms.gle/8AuLBYHS9mKamJD4A>' % (hashtag, text, dept))
+    elif len(row)==4:
+        if len(row[1])+len(row[2])+len(row[3]) >2000:
+            return ('>>> ```diff\n- Η καταχώρηση έχει παραπάνω χαρακτήρες από το μέγιστο όριο του Discord και θα παραλειφθεί\n```')
+        dept = row[2]
+        etos = row[3]
+        return ('>>> __*Ανομολόγητο#%s*__\n*%s*\n__#%s__ #%so\nΣτείλε το δικό σου εσώψυχο! <https://forms.gle/8AuLBYHS9mKamJD4A>' % (hashtag, text, dept, etos))
 
 # Modify this function to determine how an individual row will be formatted when using the random command.
 # Only used if RANDOM_ENABLED is set to True above.
@@ -78,7 +85,7 @@ def format_random(row):
 #      SHEETS API PORTION
 ################################
 
-SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive']
 
 # This function contacts the sheets API, retrieves values from the specified sheet,
 # and prepares the message to be posted by the bot.
@@ -103,10 +110,9 @@ def makePost(last_row=0, pick_random=False):
             pickle.dump(creds, token)
 
     service = build('sheets', 'v4', credentials=creds)
-
+    sortData("ASCENDING", service);
     # Call the Sheets API
     sheet = service.spreadsheets()
-
     # Retrieve values
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
                                 range=RANGE).execute()
@@ -124,14 +130,37 @@ def makePost(last_row=0, pick_random=False):
     else:
         # Append a line to the result post for every row in the sheet:
         for row in values[last_row:]:
-            post.append(format_row(row))
+            post.append(format_row(row,last_row+1))
             last_row = last_row+1
-
+        
         # Save the last row number
         with open('last_row.pickle', 'wb') as last_row_p:
             pickle.dump(last_row, last_row_p)
-
+        sortData("DESCENDING", service);
         return post
+
+def sortData(order,service):
+    body = {
+    'requests': [
+        {
+            'sortRange': {
+                'range': {
+                    'sheetId': 563107007,
+                    'startRowIndex': 1,
+                    'startColumnIndex': 0,
+                    'endColumnIndex': 4
+                },
+                'sortSpecs': [
+                    {
+                        'sortOrder': order,
+                        'dimensionIndex': 0
+                    }
+                ]
+            }
+        }
+    ]
+    }
+    response = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
 
 ############################
 #        DISCORD BOT
@@ -195,7 +224,6 @@ async def on_message(message):
 
     # Loop interrupt logic
     if message.content.startswith('!stop'):
-
         # Check channel:
         if not await is_channel_allowed(message):
             return
@@ -216,7 +244,6 @@ async def on_message(message):
 
     # Loop start logic
     elif message.content.startswith('!start'):
-
         # Check channel:
         if not await is_channel_allowed(message):
             return
@@ -248,7 +275,66 @@ async def on_message(message):
 
         # Startup message
         mins = int(WAIT_TIME/60)
-        await message.channel.send("Beep boop! Starting from row %s!\nUpdates every %s minutes!\nStop me with **!stop**\n---" % (startFrom, mins))
+        #await message.channel.send("Beep boop! Starting from row %s!\nUpdates every %s minutes!\nStop me with **!stop**\n---" % (startFrom, mins))
+        await asyncio.sleep(3)
+        print("Started")
+        await message.delete()
+        while not stop:
+            # Retrieve last row number from cache:
+            if os.path.exists('last_row.pickle'):
+                with open('last_row.pickle', 'rb') as last_row_p:
+                    startFrom = pickle.load(last_row_p)
+
+            # Build the message using the spreadsheets API
+            posts = makePost(startFrom)
+
+            # If non-empty, post the message
+            if(posts != None and len(posts) > 0):
+                for msg in posts:
+                    await message.channel.send(msg)
+
+            # Sleep until it's time for the next update
+            coro = asyncio.sleep(WAIT_TIME)
+            task = asyncio.ensure_future(coro)
+
+            # Try block in case the update loop is stopped by the user
+            try:
+                await task
+            except asyncio.CancelledError:
+                print("Stopped")
+    else:
+        # Check channel:
+        if not await is_channel_allowed(message):
+            return
+
+        # Check user role:
+        if not await is_user_allowed(message):
+            return
+
+        # If already started, show a message
+        if(not stop):
+            await message.channel.send("Already started!")
+            return
+
+        stop = False
+
+        # Determine the row to start from
+        startFrom = STARTING_ROW
+
+        # If hard-coded in the start command, use that.
+        if(len(message.content.strip().split(" ")) > 1):
+            startFrom= int(message.content.strip().split(" ")[1])
+            with open('last_row.pickle', 'wb') as last_row_p:
+                pickle.dump(startFrom, last_row_p)
+        # If not, check if we have a row number cache'd from a previous run and use that.
+        else:
+            if os.path.exists('last_row.pickle'):
+                with open('last_row.pickle', 'rb') as last_row_p:
+                    startFrom = pickle.load(last_row_p)
+
+        # Startup message
+        mins = int(WAIT_TIME/60)
+        #await message.channel.send("Beep boop! Starting from row %s!\nUpdates every %s minutes!\nStop me with **!stop**\n---" % (startFrom, mins))
         await asyncio.sleep(3)
         print("Started")
         while not stop:
