@@ -6,7 +6,7 @@
 #   but probably useful for other stuff too :)
 #
 #   Made by Fireblend (https://www.fireblend.com)
-#   Modified by knasiotis
+#
 ####################################################
 
 from __future__ import print_function
@@ -24,13 +24,13 @@ import random
 ################################
 
 # Paste spreadsheet ID here
-SPREADSHEET_ID = '<SHEET ID>'
+SPREADSHEET_ID = '1vq_HP94RIWGL5zWIIVyGMAv1U6nOmkPPpyg-7mds-I0'
 # Paste range here (can be sheet name)
-RANGE = 'RANGE IN FORMAT A:D or sheet name'
+RANGE = 'A:D'
 # Discord Token
-DISCORD_TOKEN = 'TOKEN'
+DISCORD_TOKEN = 'ODI4Njc5Nzc1NjMwNjU1NTA4.YGtGLg.pcVDljpl_UM4H23FdbJdEfXx2J0'
 # The first response row on the sheet
-STARTING_ROW = 'starting row number'
+STARTING_ROW = 2
 # Update time (5 minutes default)
 WAIT_TIME = 60*1
 # User roles that can interact with this bot:
@@ -90,54 +90,56 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapi
 # This function contacts the sheets API, retrieves values from the specified sheet,
 # and prepares the message to be posted by the bot.
 def makePost(last_row=0, pick_random=False):
-    # Google Sheets Authentication flow
-    creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+    try:
+        # Google Sheets Authentication flow
+        creds = None
+        if os.path.exists('token.pickle'):
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
 
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            # creds = flow.run_console() #Alternative authorization flow for console-based systems
-            creds = flow.run_local_server()
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-
-    service = build('sheets', 'v4', credentials=creds)
-    sortData("ASCENDING", service);
-    # Call the Sheets API
-    sheet = service.spreadsheets()
-    # Retrieve values
-    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
-                                range=RANGE).execute()
-    values = result.get('values', [])
-
-    # If we're picking a random value, just format a random row:
-    if pick_random:
-        random_row = random.sample(range(STARTING_ROW, len(values)), 1)
-        return format_random(values[random_row[0]])
-
-    # If it's an update, start with an empty string:
-    post = []
-    if not values:
-        return post
-    else:
-        # Append a line to the result post for every row in the sheet:
-        for row in values[last_row:]:
-            post.append(format_row(row,last_row+1))
-            last_row = last_row+1
-        
-        # Save the last row number
-        with open('last_row.pickle', 'wb') as last_row_p:
-            pickle.dump(last_row, last_row_p)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                # creds = flow.run_console() #Alternative authorization flow for console-based systems
+                creds = flow.run_local_server()
+            # Save the credentials for the next run
+            with open('token.pickle', 'wb') as token:
+                pickle.dump(creds, token)
+            
+        service = build('sheets', 'v4', credentials=creds)
+        # Call the Sheets API
+        sheet = service.spreadsheets()
+        sortData("ASCENDING", service);
+        # Retrieve values
+        result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
+                                    range=RANGE).execute()
+        values = result.get('values', [])
         sortData("DESCENDING", service);
-        return post
+        # If we're picking a random value, just format a random row:
+        if pick_random:
+            random_row = random.sample(range(STARTING_ROW, len(values)), 1)
+            return format_random(values[random_row[0]])
+
+        # If it's an update, start with an empty string:
+        post = []
+        if not values:
+            return post
+        else:
+            # Append a line to the result post for every row in the sheet:
+            for row in values[last_row:]:
+                post.append(format_row(row,last_row+1))
+                last_row = last_row+1
+            
+            # Save the last row number
+            with open('last_row.pickle', 'wb') as last_row_p:
+                pickle.dump(last_row, last_row_p)
+            return post
+    except:
+        pass
 
 def sortData(order,service):
     body = {
@@ -160,7 +162,10 @@ def sortData(order,service):
         }
     ]
     }
-    response = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
+    try:
+        service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body).execute()
+    except:
+        print("Ignoring timeout exception")
 
 ############################
 #        DISCORD BOT
@@ -178,7 +183,7 @@ async def is_channel_allowed(message, channels=CHANNELS):
         return True
     channel = message.channel
     if channel.name.lower() not in channels:
-        await message.channel.send("You can't do that here! Are you in the right channel?")
+        #await message.channel.send("You can't do that here! Are you in the right channel?")
         return False
     return True
 
@@ -187,7 +192,7 @@ async def is_user_allowed(message, roles=ROLES):
         return True
     user = message.author
     if next((x for x in user.roles if x.name.lower() in roles), None) is None:
-        await message.channel.send("You can't do that! Do you have the right role?")
+        #await message.channel.send("You can't do that! Do you have the right role?")
         return False
     return True
 
@@ -234,7 +239,7 @@ async def on_message(message):
 
         # If already stopped, show a message
         if(stop):
-            await message.channel.send("Already stopped!")
+            #await message.channel.send("Already stopped!")
             return
 
         # Stop the update loop
@@ -254,7 +259,7 @@ async def on_message(message):
 
         # If already started, show a message
         if(not stop):
-            await message.channel.send("Already started!")
+            #await message.channel.send("Already started!")
             return
 
         stop = False
@@ -313,7 +318,7 @@ async def on_message(message):
 
         # If already started, show a message
         if(not stop):
-            await message.channel.send("Already started!")
+            #await message.channel.send("Already started!")
             return
 
         stop = False
