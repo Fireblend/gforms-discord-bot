@@ -24,11 +24,11 @@ import random
 ################################
 
 # Paste spreadsheet ID here
-SPREADSHEET_ID = '1vq_HP94RIWGL5zWIIVyGMAv1U6nOmkPPpyg-7mds-I0'
+SPREADSHEET_ID = 'SHEET_ID'
 # Paste range here (can be sheet name)
 RANGE = 'A:D'
 # Discord Token
-DISCORD_TOKEN = 'ODI4Njc5Nzc1NjMwNjU1NTA4.YGtGLg.pcVDljpl_UM4H23FdbJdEfXx2J0'
+DISCORD_TOKEN = 'DISCORD_TOKEN'
 # The first response row on the sheet
 STARTING_ROW = 2
 # Update time (5 minutes default)
