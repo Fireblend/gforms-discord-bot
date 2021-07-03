@@ -1,4 +1,4 @@
-#Personal changes for specific usage
+# Personal changes for specific usage
 
 Bot does not require !start to begin (so for example on windows I can set it to start on boot via the scheduler)
 
