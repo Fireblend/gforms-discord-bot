@@ -312,7 +312,6 @@ async def on_message(message):
                 await task
             except asyncio.CancelledError:
                 print("Stopped")
-    #kai apo dw thes
     else:
         # Check channel:
         if not await is_channel_allowed(message):
@@ -425,4 +424,3 @@ async def on_ready():
 
 # Run the client
 client.run(DISCORD_TOKEN)
-
