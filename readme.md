@@ -1,3 +1,11 @@
+#Personal changes for specific usage
+
+Bot does not require !start to begin (so for example on windows I can set it to start on boot via the scheduler)
+
+-Bot now sorts the form so that it definitely posts the latest messages (The bot could be fooled by someone changing the sort order manually)
+-Fixed some exceptions and updated dependencies
+
+
 # gforms-discord-bot
 
 This is a simple Discord bot intended to monitor and report on incoming responses from Google Forms through its Google Sheets integration. It regularly checks for new rows in the responses spreadsheet, and posts them on Discord. It's well commented and minimalistic, so feel free to adapt it to your own needs!
